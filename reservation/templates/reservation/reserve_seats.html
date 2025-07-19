@@ -1,0 +1,10 @@
+{% extends 'reservation/base.html' %}
+
+{% block content %}
+    <h2>Reserve Seats for {{ showtime.movie.title }} at {{ showtime.show_time }}</h2>
+    <form method="post">
+        {% csrf_token %}
+        {{ form.as_p }}
+        <button type="submit" class="btn btn-primary">Reserve</button>
+    </form>
+{% endblock %}

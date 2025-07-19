@@ -1,0 +1,9 @@
+{% extends 'reservation/base.html' %}
+
+{% block content %}
+    <h1>Reservation Confirmation</h1>
+    <p>Thank you for your reservation, {{ reservation.user.username }}!</p>
+    <p>Movie: {{ reservation.showtime.movie.title }}</p>
+    <p>Showtime: {{ reservation.showtime.show_time }}</p>
+    <p>Seats: {{ reservation.seats }}</p>
+{% endblock %}
