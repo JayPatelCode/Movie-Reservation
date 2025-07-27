@@ -1,11 +1,11 @@
 #!/bin/bash
 
 # build_files.sh
-pip install -r requirements.txt
+pip3 install -r requirements.txt
 
 # Make migrations
-python manage.py makemigrations --noinput
-python manage.py migrate --noinput
+python3 manage.py makemigrations --noinput
+python3 manage.py migrate --noinput
 
 # Collect static files
-python manage.py collectstatic --noinput --clear
+python3 manage.py collectstatic --noinput --clear
