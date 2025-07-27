@@ -14,13 +14,17 @@
     "@testing-library/user-event": "^13.5.0",
     "axios": "^1.10.0",
     "framer-motion": "^12.23.6",
+    "jwt-decode": "^4.0.0",
     "lottie-react": "^2.4.1",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
+    "react-multi-carousel": "^2.8.6",
     "react-qr-code": "^2.0.18",
     "react-router-dom": "^7.7.0",
     "react-scripts": "5.0.1",
     "react-share": "^5.2.2",
+    "react-slick": "^0.30.3",
+    "slick-carousel": "^1.8.1",
     "web-vitals": "^2.1.4"
   },
   "scripts": {

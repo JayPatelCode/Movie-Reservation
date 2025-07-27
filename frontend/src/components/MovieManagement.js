@@ -35,7 +35,7 @@ const MovieManagement = () => {
       try {
         const response = await axios.get('http://localhost:8000/is_admin/', {
           headers: {
-            'Authorization': `Bearer ${token}`,
+            'Authorization': `JWT ${token}`,
           },
         });
         if (!response.data.is_admin) {
@@ -55,7 +55,7 @@ const MovieManagement = () => {
     try {
       const config = {
         headers: {
-          'Authorization': `Bearer ${token}`,
+          'Authorization': `JWT ${token}`,
         },
       };
       const response = await axios.get('http://localhost:8000/movies/', config);
@@ -107,7 +107,7 @@ const MovieManagement = () => {
     }
     const config = {
       headers: {
-        'Authorization': `Bearer ${token}`,
+        'Authorization': `JWT ${token}`,
       },
     };
     try {
@@ -134,7 +134,7 @@ const MovieManagement = () => {
     }
     const config = {
       headers: {
-        'Authorization': `Bearer ${token}`,
+        'Authorization': `JWT ${token}`,
       },
     };
     try {

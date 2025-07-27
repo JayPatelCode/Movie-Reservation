@@ -1,12 +1,23 @@
 from rest_framework import serializers
-from .models import Movie, Showtime, Reservation, Theater, Seat
+from .models import Movie, Showtime, Reservation, Theater, Seat, Rating
 from django.contrib.auth.models import User
-from django.db.models import Sum, Count
+from djoser.serializers import UserCreateSerializer as BaseUserCreateSerializer
+from django.db.models import Sum, Count, Avg
+
+class RatingSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Rating
+        fields = '__all__'
 
 class MovieSerializer(serializers.ModelSerializer):
+    average_rating = serializers.SerializerMethodField()
+
     class Meta:
         model = Movie
-        fields = ['id', 'title', 'description', 'duration', 'poster_path']
+        fields = ['id', 'title', 'description', 'duration', 'poster_path', 'average_rating', 'release_date', 'genres']
+
+    def get_average_rating(self, obj):
+        return obj.average_rating
 
 class TheaterSerializer(serializers.ModelSerializer):
     class Meta:
@@ -45,10 +56,23 @@ class ReservationSerializer(serializers.ModelSerializer):
     user = serializers.PrimaryKeyRelatedField(read_only=True)
     selected_seats = SeatSerializer(many=True, read_only=True) # For reading
     seat_ids = serializers.ListField(child=serializers.IntegerField(), write_only=True) # For writing
+    seat_numbers = serializers.ReadOnlyField()
+    total_price = serializers.ReadOnlyField()
+    total_seats = serializers.ReadOnlyField()
+    qr_code_url = serializers.SerializerMethodField()
 
     class Meta:
         model = Reservation
-        fields = ('id', 'user', 'showtime', 'selected_seats', 'showtime_pk', 'seat_ids') # Include showtime_pk for writing
+        fields = ('id', 'user', 'showtime', 'selected_seats', 'showtime_pk', 'seat_ids', 
+                 'booking_reference', 'created_at', 'is_cancelled', 'qr_code_url',
+                 'seat_numbers', 'total_price', 'total_seats')
+    
+    def get_qr_code_url(self, obj):
+        if obj.qr_code:
+            request = self.context.get('request')
+            if request:
+                return request.build_absolute_uri(obj.qr_code.url)
+        return None
 
     def create(self, validated_data):
         showtime_obj = validated_data.pop('showtime_pk') # Get the Showtime object from the writable field
@@ -57,14 +81,16 @@ class ReservationSerializer(serializers.ModelSerializer):
         reservation = Reservation.objects.create(showtime=showtime_obj, **validated_data)
         seats = Seat.objects.filter(id__in=seat_ids)
         reservation.selected_seats.set(seats)
+        
+        # Generate QR code after seats are set
+        try:
+            reservation.generate_qr_code()
+        except Exception as e:
+            print(f"Error generating QR code: {e}")
+        
         return reservation
 
-class UserSerializer(serializers.ModelSerializer):
-    class Meta:
+class UserSerializer(BaseUserCreateSerializer):
+    class Meta(BaseUserCreateSerializer.Meta):
         model = User
-        fields = ('id', 'username', 'password')
-        extra_kwargs = {'password': {'write_only': True}}
-
-    def create(self, validated_data):
-        user = User.objects.create_user(**validated_data)
-        return user
+        fields = ('id', 'username', 'email', 'first_name', 'last_name', 'password')

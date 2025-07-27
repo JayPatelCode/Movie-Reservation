@@ -4,6 +4,7 @@ import { Typography, Paper, Button, Box, CardMedia, Divider, Chip, Card, CardCon
 import { motion, AnimatePresence } from 'framer-motion';
 import { PlayArrow, Share, Favorite, FavoriteBorder, AccessTime, CalendarToday, LocationOn, People, Star, ArrowBack, Theaters } from '@mui/icons-material';
 import axios from 'axios';
+import { jwtDecode } from 'jwt-decode';
 
 const MovieDetails = () => {
   const { id } = useParams();
@@ -12,30 +13,87 @@ const MovieDetails = () => {
   const [loading, setLoading] = useState(true);
   const [isFavorite, setIsFavorite] = useState(false);
   const [showTrailer, setShowTrailer] = useState(false);
+  const [userRating, setUserRating] = useState(0);
+  const [averageRating, setAverageRating] = useState(0);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [currentUserId, setCurrentUserId] = useState(null);
 
   useEffect(() => {
-    setLoading(true);
-    axios.get(`http://localhost:8000/movies/${id}/`)
-      .then(response => {
-        setMovie(response.data);
-        setLoading(false);
-      })
-      .catch(error => {
-        console.error('There was an error fetching the movie details!', error);
-        setLoading(false);
-      });
+    const token = localStorage.getItem('token');
+    if (token) {
+      setIsLoggedIn(true);
+      try {
+        const decodedToken = jwtDecode(token);
+        setCurrentUserId(decodedToken.user_id);
+      } catch (error) {
+        console.error("Error decoding token:", error);
+        setIsLoggedIn(false);
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+      }
+    }
 
-    axios.get(`http://localhost:8000/showtimes/?movie_id=${id}`)
-      .then(response => {
-        setShowtimes(response.data);
+    setLoading(true);
+    const fetchMovieDetails = axios.get(`http://localhost:8000/movies/${id}/`);
+    const fetchMovieShowtimes = axios.get(`http://localhost:8000/showtimes/?movie_id=${id}`);
+    const fetchMovieRatings = axios.get(`http://localhost:8000/movies/${id}/get_ratings/`);
+
+    Promise.all([fetchMovieDetails, fetchMovieShowtimes, fetchMovieRatings])
+      .then(([movieResponse, showtimesResponse, ratingsResponse]) => {
+        setMovie(movieResponse.data);
+        setShowtimes(showtimesResponse.data);
+        const ratings = ratingsResponse.data;
+        if (ratings.length > 0) {
+          const sumRatings = ratings.reduce((acc, curr) => acc + curr.rating, 0);
+          setAverageRating(sumRatings / ratings.length);
+        }
+        setLoading(false);
       })
       .catch(error => {
-        console.error('There was an error fetching the showtimes!', error);
+        console.error('There was an error fetching the movie details, showtimes, or ratings!', error);
+        setLoading(false);
       });
   }, [id]);
 
   const toggleFavorite = () => {
     setIsFavorite(!isFavorite);
+  };
+
+  const handleRatingChange = (event, newValue) => {
+    if (!isLoggedIn || !currentUserId) {
+      alert("Please log in to rate this movie.");
+      return;
+    }
+
+    setUserRating(newValue);
+    axios.post('http://localhost:8000/ratings/', {
+      movie: movie.id,
+      user: currentUserId,
+      rating: newValue
+    }, {
+      headers: {
+        Authorization: `JWT ${localStorage.getItem('token')}`
+      }
+    })
+    .then(response => {
+      console.log('Rating submitted successfully:', response.data);
+      axios.get(`http://localhost:8000/movies/${id}/get_ratings/`)
+        .then(ratingsResponse => {
+          const ratings = ratingsResponse.data;
+          if (ratings.length > 0) {
+            const sumRatings = ratings.reduce((acc, curr) => acc + curr.rating, 0);
+            setAverageRating(sumRatings / ratings.length);
+          } else {
+            setAverageRating(0);
+          }
+        })
+        .catch(error => console.error('Error refetching ratings:', error));
+    })
+    .catch(error => {
+      console.error('Error submitting rating:', error);
+      alert("Failed to submit rating. You might have already rated this movie or there was an error.");
+      setUserRating(0);
+    });
   };
 
   if (loading || !movie) {
@@ -224,11 +282,31 @@ const MovieDetails = () => {
                     {/* Movie Stats */}
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 3, mb: 3 }}>
                       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                        <Rating value={4.5} precision={0.5} size="large" readOnly />
+                        <Rating value={averageRating} precision={0.5} size="large" readOnly />
                         <Typography variant="h6" color="text.secondary">
-                          4.5 (2,847 reviews)
+                          {averageRating.toFixed(1)} ({movie.ratings ? movie.ratings.length : 0} reviews)
                         </Typography>
                       </Box>
+                    </Box>
+
+                    {/* User Rating Input */}
+                    <Box sx={{ mb: 3 }}>
+                      <Typography variant="h6" gutterBottom>
+                        Rate this movie:
+                      </Typography>
+                      <Rating
+                        name="user-rating"
+                        value={userRating}
+                        precision={1}
+                        onChange={handleRatingChange}
+                        size="large"
+                        disabled={!isLoggedIn} // Disable if not logged in
+                      />
+                      {!isLoggedIn && (
+                        <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+                          <Link to="/login">Log in</Link> to rate this movie.
+                        </Typography>
+                      )}
                     </Box>
 
                     {/* Movie Details Chips */}
@@ -437,7 +515,7 @@ const MovieDetails = () => {
                               sx={{
                                 background: isAlmostFull 
                                   ? 'linear-gradient(45deg, #ffa726 30%, #fb8c00 90%)'
-                                  : 'linear-gradient(45deg, #667eea 30%, #764ba2 90%)',
+                                  : 'linear-gradient(45deg, #667eea 30%, #764ba2 100%)',
                                 borderRadius: 2,
                                 textTransform: 'none',
                                 fontSize: '1.1rem',

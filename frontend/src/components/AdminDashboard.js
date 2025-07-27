@@ -23,7 +23,7 @@ const AdminDashboard = () => {
       try {
         const adminResponse = await axios.get('http://localhost:8000/is_admin/', {
           headers: {
-            'Authorization': `Bearer ${token}`,
+            'Authorization': `JWT ${token}`,
           },
         });
         if (!adminResponse.data.is_admin) {
@@ -33,14 +33,14 @@ const AdminDashboard = () => {
           // Fetch total seats booked
           const seatsResponse = await axios.get('http://localhost:8000/total_seats_booked/', {
             headers: {
-              'Authorization': `Bearer ${token}`,
+              'Authorization': `JWT ${token}`,
             },
           });
           setTotalSeatsBooked(seatsResponse.data.total_seats_booked);
           // Fetch total revenue
           const revenueResponse = await axios.get('http://localhost:8000/total_revenue/', {
             headers: {
-              'Authorization': `Bearer ${token}`,
+              'Authorization': `JWT ${token}`,
             },
           });
           setTotalRevenue(revenueResponse.data.total_revenue);

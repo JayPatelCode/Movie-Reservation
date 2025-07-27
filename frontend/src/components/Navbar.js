@@ -3,6 +3,7 @@ import { AppBar, Toolbar, Typography, Button, IconButton, Box, Avatar, Menu, Men
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Movie, AccountCircle, ExitToApp, LockOpen, PersonAdd, BookOnline, AdminPanelSettings, Home, Search, Notifications, DarkMode, LightMode } from '@mui/icons-material';
+import { useTheme } from '../contexts/ThemeContext';
 import axios from 'axios';
 
 const Navbar = () => {
@@ -10,8 +11,8 @@ const Navbar = () => {
   const location = useLocation();
   const [isAdmin, setIsAdmin] = useState(false);
   const [anchorEl, setAnchorEl] = useState(null);
-  const [darkMode, setDarkMode] = useState(false);
   const [notificationCount] = useState(3); // Mock notification count
+  const { mode, toggleColorMode } = useTheme();
   const token = localStorage.getItem('token');
   const currentUser = token ? JSON.parse(localStorage.getItem('user') || '{}') : null;
 
@@ -21,7 +22,7 @@ const Navbar = () => {
         try {
           const response = await axios.get('http://localhost:8000/is_admin/', {
             headers: {
-              'Authorization': `Bearer ${token}`,
+              'Authorization': `JWT ${token}`,
             },
           });
           setIsAdmin(response.data.is_admin);
@@ -51,9 +52,6 @@ const Navbar = () => {
     setAnchorEl(null);
   };
 
-  const toggleDarkMode = () => {
-    setDarkMode(!darkMode);
-  };
 
   const isActive = (path) => location.pathname === path;
 
@@ -135,10 +133,10 @@ const Navbar = () => {
           {/* Right side actions */}
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
             {/* Theme Toggle */}
-            <Tooltip title={`Switch to ${darkMode ? 'Light' : 'Dark'} Mode`}>
+            <Tooltip title={`Switch to ${mode === 'dark' ? 'Light' : 'Dark'} Mode`}>
               <motion.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}>
-                <IconButton onClick={toggleDarkMode} sx={{ color: 'white' }}>
-                  {darkMode ? <LightMode /> : <DarkMode />}
+                <IconButton onClick={toggleColorMode} sx={{ color: 'white' }}>
+                  {mode === 'dark' ? <LightMode /> : <DarkMode />}
                 </IconButton>
               </motion.div>
             </Tooltip>

@@ -14,7 +14,7 @@ const Login = () => {
     event.preventDefault();
     setError('');
     try {
-      const response = await axios.post('http://localhost:8000/token/', {
+      const response = await axios.post('http://localhost:8000/auth/jwt/create/', {
         username,
         password,
       });
@@ -22,27 +22,13 @@ const Login = () => {
       // Store the token
       localStorage.setItem('token', response.data.access);
       
-      // Decode JWT token to get user info
-      const token = response.data.access;
-      const base64Url = token.split('.')[1];
-      const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
-      const jsonPayload = decodeURIComponent(
-        atob(base64)
-          .split('')
-          .map((c) => {
-            return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
-          })
-          .join('')
-      );
-      const decoded = JSON.parse(jsonPayload);
-      
-      // Store user info
-      const userInfo = {
-        id: decoded.user_id,
-        username: username,
-        // Add other fields as needed
-      };
-      localStorage.setItem('user', JSON.stringify(userInfo));
+      // Fetch user info from Djoser's user endpoint
+      const userResponse = await axios.get('http://localhost:8000/auth/users/me/', {
+        headers: {
+          'Authorization': `JWT ${response.data.access}`,
+        },
+      });
+      localStorage.setItem('user', JSON.stringify(userResponse.data));
       
       navigate('/');
     } catch (err) {
@@ -119,6 +105,11 @@ const Login = () => {
               Sign In
             </Button>
             <Grid container>
+              <Grid item xs>
+                <Link href="/forgot-password" variant="body2">
+                  Forgot password?
+                </Link>
+              </Grid>
               <Grid item>
                 <Link href="/register" variant="body2">
                   {"Don't have an account? Sign Up"}

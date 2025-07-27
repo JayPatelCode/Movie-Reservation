@@ -14,14 +14,37 @@ const Register = () => {
     event.preventDefault();
     setError('');
     try {
-      await axios.post('http://localhost:8000/register/', {
+      await axios.post('http://localhost:8000/auth/users/', {
         username,
         password,
       });
       navigate('/login');
     } catch (err) {
       console.error('Registration failed!', err);
-      setError('Registration failed. Please try again.');
+      if (err.response && err.response.data) {
+        // Extract specific error messages from Django response
+        const errors = err.response.data;
+        let errorMessage = '';
+        
+        if (errors.username) {
+          errorMessage += `Username: ${errors.username.join(', ')}. `;
+        }
+        if (errors.password) {
+          errorMessage += `Password: ${errors.password.join(', ')}. `;
+        }
+        if (errors.email) {
+          errorMessage += `Email: ${errors.email.join(', ')}. `;
+        }
+        
+        // If no specific field errors, show general error
+        if (!errorMessage && errors.non_field_errors) {
+          errorMessage = errors.non_field_errors.join(', ');
+        }
+        
+        setError(errorMessage || 'Registration failed. Please try again.');
+      } else {
+        setError('Registration failed. Please try again.');
+      }
     }
   };
 

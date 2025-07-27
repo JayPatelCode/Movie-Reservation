@@ -1,13 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
-import { Typography, Paper, Button, Box, Grid, Chip, Container, Card, CardContent, Divider, Stepper, Step, StepLabel, Dialog, DialogTitle, DialogContent, DialogActions, Skeleton } from '@mui/material';
+import { Typography, Paper, Button, Box, Grid, Chip, Container, Card, CardContent, Divider, Stepper, Step, StepLabel, Dialog, DialogTitle, DialogContent, DialogActions, Skeleton, Snackbar, Alert } from '@mui/material';
 import { motion, AnimatePresence } from 'framer-motion';
 import { EventSeat, ArrowBack, Payment, ConfirmationNumber, AccessTime, LocationOn, AttachMoney, Person, CheckCircle } from '@mui/icons-material';
 import axios from 'axios';
 
 const Reservation = () => {
   const { id } = useParams(); // showtime_id
-  console.log('🎬 Reservation component loaded with showtime ID:', id); // Debug log
   const navigate = useNavigate();
   const [showtime, setShowtime] = useState(null);
   const [theater, setTheater] = useState(null);
@@ -16,8 +15,9 @@ const Reservation = () => {
   const [selectedSeatIds, setSelectedSeatIds] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [openSnackbar, setOpenSnackbar] = useState(false);
   const [confirmDialog, setConfirmDialog] = useState(false);
-  const [currentStep] = useState(0);
+  const [currentStep, setCurrentStep] = useState(0); // Now using state for steps
 
   const steps = ['Select Seats', 'Review & Pay', 'Confirmation'];
 
@@ -28,25 +28,22 @@ const Reservation = () => {
         const token = localStorage.getItem('token');
         const config = token ? {
           headers: {
-            'Authorization': `Bearer ${token}`,
+            'Authorization': `JWT ${token}`,
           },
         } : {};
 
         const showtimeResponse = await axios.get(`http://localhost:8000/showtimes/${id}/`);
         const currentShowtime = showtimeResponse.data;
-        console.log('🎪 Fetched showtime data:', currentShowtime); // Debug log
-        console.log('📽️ Movie in this showtime:', currentShowtime.movie); // Debug log
         setShowtime(currentShowtime);
 
         const theaterResponse = await axios.get(`http://localhost:8000/theaters/${currentShowtime.theater.id}/`);
         const currentTheater = theaterResponse.data;
         setTheater(currentTheater);
 
-        // Fetch all seats for this theater
+        // Fetch all seats for the current theater
         const allSeatsResponse = await axios.get(`http://localhost:8000/seats/?theater=${currentTheater.id}`);
         setAllSeats(allSeatsResponse.data);
 
-        // Fetch all reserved seat IDs for this showtime
         try {
           const reservedSeatsResponse = await axios.get(`http://localhost:8000/showtimes/${id}/reserved_seats/`, config);
           setReservedSeatIds(reservedSeatsResponse.data);
@@ -67,6 +64,7 @@ const Reservation = () => {
   }, [id]);
 
   const handleSeatClick = (seatId) => {
+    setError(''); // Clear previous errors
     if (reservedSeatIds.includes(seatId)) {
       return; // Cannot select already reserved seats
     }
@@ -75,6 +73,9 @@ const Reservation = () => {
     } else {
       if (selectedSeatIds.length < 8) { // Max 8 seats per booking
         setSelectedSeatIds([...selectedSeatIds, seatId]);
+      } else {
+        setError('You can select a maximum of 8 seats.');
+        setOpenSnackbar(true);
       }
     }
   };
@@ -82,9 +83,12 @@ const Reservation = () => {
   const handleConfirmClick = () => {
     if (selectedSeatIds.length === 0) {
       setError('Please select at least one seat.');
+      setOpenSnackbar(true);
       return;
     }
+    setError(''); // Clear any previous errors
     setConfirmDialog(true);
+    setCurrentStep(1); // Move to review step
   };
 
   const handleSubmit = async () => {
@@ -96,7 +100,7 @@ const Reservation = () => {
       }
       const config = {
         headers: {
-          'Authorization': `Bearer ${token}`,
+          'Authorization': `JWT ${token}`,
         },
       };
       await axios.post('http://localhost:8000/reservations/', {
@@ -104,7 +108,9 @@ const Reservation = () => {
         seat_ids: selectedSeatIds,
       }, config);
       setConfirmDialog(false);
-      navigate('/my-reservations');
+      setCurrentStep(2); // Move to confirmation step
+      // Optionally, navigate to a confirmation page or display a success message
+      navigate('/my-reservations'); // Example: navigate to user's reservations
     } catch (err) {
       console.error('Reservation failed!', err);
       if (err.response && err.response.data && err.response.data.detail) {
@@ -113,14 +119,21 @@ const Reservation = () => {
         setError('Reservation failed. Please try again.');
       }
       setConfirmDialog(false);
+      setCurrentStep(0); // Go back to seat selection on error
     }
+  };
+
+  const handleCloseSnackbar = (event, reason) => {
+    if (reason === 'clickaway') {
+      return;
+    }
+    setOpenSnackbar(false);
   };
 
   const renderSeat = (seat, rowIndex, seatIndex) => {
     const isReserved = reservedSeatIds.includes(seat.id);
     const isSelected = selectedSeatIds.includes(seat.id);
     const isVIP = rowIndex < 3; // First 3 rows are VIP
-    const isCenter = seatIndex > theater.seats_per_row * 0.25 && seatIndex < theater.seats_per_row * 0.75;
 
     let seatStatus = 'available';
     if (isReserved) seatStatus = 'reserved';
@@ -129,20 +142,20 @@ const Reservation = () => {
 
     const getSeatColor = () => {
       switch (seatStatus) {
-        case 'reserved': return '#ff4444';
-        case 'selected': return '#ff9500';
-        case 'vip': return '#9c27b0';
-        default: return '#4caf50';
+        case 'reserved': return '#ef5350'; // Red
+        case 'selected': return '#ffb300'; // Amber
+        case 'vip': return '#ab47bc'; // Purple
+        default: return '#66bb6a'; // Green
       }
     };
 
     return (
       <motion.div
         key={seat.id}
-        whileHover={!isReserved ? { scale: 1.2, rotateX: 15 } : {}}
+        whileHover={!isReserved ? { scale: 1.2, rotateY: 15 } : {}}
         whileTap={!isReserved ? { scale: 0.9 } : {}}
         animate={isSelected ? { scale: 1.1, rotateY: 10 } : {}}
-        transition={{ type: "spring", stiffness: 300 }}
+        transition={{ type: "spring", stiffness: 300, damping: 10 }}
       >
         <Box
           sx={{
@@ -153,6 +166,7 @@ const Reservation = () => {
             position: 'relative',
             perspective: '1000px',
             transformStyle: 'preserve-3d',
+            opacity: isReserved ? 0.6 : 1,
           }}
           onClick={() => handleSeatClick(seat.id)}
         >
@@ -225,7 +239,7 @@ const Reservation = () => {
                   justifyContent: 'center'
                 }}
               >
-                <CheckCircle sx={{ fontSize: 16, color: '#ff9500' }} />
+                <CheckCircle sx={{ fontSize: 16, color: '#ffb300' }} />
               </motion.div>
             )}
           </Box>
@@ -492,22 +506,22 @@ const Reservation = () => {
                 <Chip 
                   icon={<EventSeat />} 
                   label="Available" 
-                  sx={{ bgcolor: '#4caf50', color: 'white' }} 
+                  sx={{ bgcolor: '#66bb6a', color: 'white' }} 
                 />
                 <Chip 
                   icon={<EventSeat />} 
                   label="Selected" 
-                  sx={{ bgcolor: '#ff9500', color: 'white' }} 
+                  sx={{ bgcolor: '#ffb300', color: 'white' }} 
                 />
                 <Chip 
                   icon={<EventSeat />} 
                   label="Reserved" 
-                  sx={{ bgcolor: '#ff4444', color: 'white' }} 
+                  sx={{ bgcolor: '#ef5350', color: 'white' }} 
                 />
                 <Chip 
                   icon={<EventSeat />} 
                   label="VIP (👑)" 
-                  sx={{ bgcolor: '#9c27b0', color: 'white' }} 
+                  sx={{ bgcolor: '#ab47bc', color: 'white' }} 
                 />
               </Box>
 
@@ -673,6 +687,12 @@ const Reservation = () => {
           </Button>
         </DialogActions>
       </Dialog>
+
+      <Snackbar open={openSnackbar} autoHideDuration={6000} onClose={handleCloseSnackbar}>
+        <Alert onClose={handleCloseSnackbar} severity="error" sx={{ width: '100%' }}>
+          {error}
+        </Alert>
+      </Snackbar>
     </Container>
   );
 };

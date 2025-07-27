@@ -22,6 +22,8 @@ from reservation.views import is_admin_view, total_seats_booked_view, total_reve
 
 urlpatterns = [
     path('admin/', admin.site.urls),
+    path('auth/', include('djoser.urls')),
+    path('auth/', include('djoser.urls.jwt')),
     path('', include('reservation.urls')),
     path('is_admin/', is_admin_view, name='is_admin'),
     path('total_seats_booked/', total_seats_booked_view, name='total_seats_booked'),

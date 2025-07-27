@@ -30,7 +30,7 @@ const TheaterManagement = () => {
       try {
         const response = await axios.get('http://localhost:8000/is_admin/', {
           headers: {
-            'Authorization': `Bearer ${token}`,
+            'Authorization': `JWT ${token}`,
           },
         });
         if (!response.data.is_admin) {
@@ -50,7 +50,7 @@ const TheaterManagement = () => {
     try {
       const config = {
         headers: {
-          'Authorization': `Bearer ${token}`,
+          'Authorization': `JWT ${token}`,
         },
       };
       const response = await axios.get('http://localhost:8000/theaters/', config);
@@ -102,7 +102,7 @@ const TheaterManagement = () => {
     }
     const config = {
       headers: {
-        'Authorization': `Bearer ${token}`,
+        'Authorization': `JWT ${token}`,
       },
     };
     try {
@@ -129,7 +129,7 @@ const TheaterManagement = () => {
     }
     const config = {
       headers: {
-        'Authorization': `Bearer ${token}`,
+        'Authorization': `JWT ${token}`,
       },
     };
     try {
