@@ -105,3 +105,54 @@ For production, it is highly recommended to use a robust database like PostgreSQ
 *   `static/`: Static files for Django (e.g., CSS, JS, images).
 *   `media/`: User-uploaded media files.
 
+## Screenshots
+
+Here are some screenshots of the Movie Reservation System:
+
+### Admin Sign In
+![Admin Sign In](screenshots/Admin%20sign%20in.png)
+
+### Admin Dashboard
+![Admin Dashboard](screenshots/AdminDashboard.png)
+
+### Home Page 1
+![Home Page 1](screenshots/Home_page1.png)
+
+### Home Page 2
+![Home Page 2](screenshots/Home_page2.png)
+
+### Login
+![Login](screenshots/login.png)
+
+### Manage Profile
+![Manage Profile](screenshots/Manage_profile.png)
+
+### Movie Management
+![Movie Management](screenshots/Movie%20Management.png)
+
+### Movie Detail 1
+![Movie Detail 1](screenshots/Movie_detail1.png)
+
+### Movie Detail 2
+![Movie Detail 2](screenshots/Movie_Detail2.png)
+
+### My Bookings
+![My Bookings](screenshots/My_Bookings.png)
+
+### Payment
+![Payment](screenshots/Payment.png)
+
+### Seat Reservation 1
+![Seat Reservation 1](screenshots/Seat_reservation1.png)
+
+### Seat Reservation 2
+![Seat Reservation 2](screenshots/Seat_Reservation2.png)
+
+### Showtime Management
+![Showtime Management](screenshots/Showtime_management.png)
+
+### Theater Management
+![Theater Management](screenshots/Theater%20Management.png)
+
+### Ticket QR Code
+![Ticket QR Code](screenshots/Ticket_QR_Code.png)
